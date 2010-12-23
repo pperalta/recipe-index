@@ -35,16 +35,24 @@ public class SwingMain extends JFrame {
 	
 	// TODO: this should be customizable
 	private static final String DOC_DIR = "H:\\opt\\src\\recipe-index\\data\\";
+	
+	// TODO: this should go into a hidden directory under $HOME
 	private static final String INDEX_DIR = "H:\\opt\\src\\recipe-index\\index\\";
 	
+	/**
+	 * Ensure that the index has been created and ready for searching
+	 */
 	protected void initializeSearch() {
 		m_indexer = new Indexer(DOC_DIR, INDEX_DIR);
-		// TODO: remove
+		// TODO: this should not be done upon every startup if the index already exists
 		m_indexer.createIndex();		
 		
 		m_searcher = new Searcher(INDEX_DIR);
 	}
 
+	/**
+	 * Create UI components and lay them out in the frame
+	 */
 	protected void buildUI() {
 		JComponent contentPane = (JComponent) getContentPane();
 		contentPane.setLayout(new GridBagLayout());
@@ -114,6 +122,13 @@ public class SwingMain extends JFrame {
 		 setVisible(true);
 	}
 
+	/**
+	 * Execute search and update UI with results.  It is assumed that this will
+	 * be invoked via the AWT thread, thus the actual search will be performed in
+	 * another thread (using {@link SwingWorker}).
+	 * 
+	 * @param s search criteria
+	 */
 	private void onSearch(final String s) {
 		SwingWorker<List<String>, Object> worker = new SwingWorker<List<String>, Object>() {
 			@Override
@@ -137,6 +152,9 @@ public class SwingMain extends JFrame {
 		worker.execute();		
 	}
 
+	/**
+	 * Table model that represents search results 
+	 */
 	public static class ResultsTableModel extends AbstractTableModel {
 		private List<String> m_files = new ArrayList<String>();
 		
@@ -165,6 +183,7 @@ public class SwingMain extends JFrame {
 	}
 
 	public static void main(String[] args) throws Exception {
+		//TODO: this should use LaF for the native OS, forcing to Windows for now
 		UIManager.setLookAndFeel(
 				"com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
 
