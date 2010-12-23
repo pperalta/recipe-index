@@ -1,19 +1,23 @@
 package org.blackbeanbag.recipe;
 
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -87,8 +91,26 @@ public class SwingMain extends JFrame {
 		 table.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				// TODO: open document in a new thread
-				LOG.info(e.getSource());
+				if (e.getComponent().isEnabled() && e.getButton() == MouseEvent.BUTTON1 && 
+						e.getClickCount() == 2) {
+					JTable table = (JTable) e.getSource();
+		            Point p = e.getPoint();
+		            int row = table.rowAtPoint(p); 
+		            int column = table.columnAtPoint(p);
+		            String s = (String) table.getModel().getValueAt(table.convertRowIndexToModel(row), 
+		            		table.convertColumnIndexToModel(column));
+		            LOG.debug("Opening document " + s);
+		            try {
+		            	// TODO: open in new thread
+						Desktop.getDesktop().open(new File(s));
+					} 
+		            catch (Exception ex) {
+						String msg = "Error opening " + s + ": "  + 
+							ex.getMessage() == null ? ex.getClass().getName() : ex.getMessage();
+						LOG.error(msg, ex);
+						JOptionPane.showMessageDialog(table, msg, "Error", JOptionPane.ERROR_MESSAGE);
+					}
+		        }
 			}
 		 });
 		 
@@ -116,9 +138,10 @@ public class SwingMain extends JFrame {
 
 		 // ----- finalize window ----------------------------------------
 		 setDefaultCloseOperation(EXIT_ON_CLOSE);
-		 setPreferredSize(new Dimension(320, 240));
+		 setPreferredSize(new Dimension(640, 480));
 		 pack();
 		 setTitle("Recipe Search");
+		 setLocationRelativeTo(null);
 		 setVisible(true);
 	}
 
@@ -130,6 +153,9 @@ public class SwingMain extends JFrame {
 	 * @param s search criteria
 	 */
 	private void onSearch(final String s) {
+		if (s.isEmpty()) {
+			return;
+		}
 		SwingWorker<List<String>, Object> worker = new SwingWorker<List<String>, Object>() {
 			@Override
 			protected List<String> doInBackground() throws Exception {
