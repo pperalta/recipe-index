@@ -52,7 +52,6 @@ public class Indexer {
 			LOG.debug("found docs: " + docs);
 		}
 		for (String doc: docs) {
-			// TODO: use os dependent file separator 
 			indexDocument(scanWordDocument(m_docDir + doc));
 		}
 		try {
