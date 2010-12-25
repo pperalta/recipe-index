@@ -266,6 +266,7 @@ public class SwingMain extends JFrame {
             window.buildUI();
         }
         catch (Exception e) {
+            LOG.error("Unhandled exception", e);
             String msg = e.getMessage() == null ? e.toString() : e.getMessage();
             JOptionPane.showMessageDialog(null, msg, "Error",
                     JOptionPane.ERROR_MESSAGE);

@@ -126,7 +126,8 @@ public class Indexer {
 			return doc;					
 		}
 		catch (Exception e) {
-			throw new RuntimeException(e);			
+		    LOG.error("Error parsing file " + file, e);
+		    return null;
 		}
 	}	
 	
@@ -135,6 +136,9 @@ public class Indexer {
 	 * @param doc Lucene document to index
 	 */
 	void indexDocument(Document doc) {
+	    if (doc == null) {
+	        return;
+	    }
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("Indexing document:  " + doc);
 		}		
