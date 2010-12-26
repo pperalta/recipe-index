@@ -14,15 +14,19 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
@@ -44,8 +48,7 @@ public class SwingMain extends JFrame {
      * Ensure that the index has been created and ready for searching
      */
     protected void initializeSearch() {
-        String settings = System.getProperty("user.home") + File.separator
-                + ".recipe-index";
+        String settings = System.getProperty("user.home") + File.separator + ".recipe-index";
         if (LOG.isDebugEnabled()) {
             LOG.debug("Settings directory: " + settings);
         }
@@ -54,8 +57,7 @@ public class SwingMain extends JFrame {
         File settingsDir = new File(settings);
         if (settingsDir.exists()) {
             if (!settingsDir.isDirectory()) {
-                throw new IllegalStateException("File " + settings
-                        + " must be a directory");
+                throw new IllegalStateException("File " + settings + " must be a directory");
             }
         }
         else {
@@ -64,8 +66,7 @@ public class SwingMain extends JFrame {
 
         // Load properties file
         Properties p = new Properties();
-        String settingsFileName = settings + File.separator
-                + "recipe-index.properties";
+        String settingsFileName = settings + File.separator + "recipe-index.properties";
         File settingsProperties = new File(settingsFileName);
 
         try {
@@ -80,8 +81,8 @@ public class SwingMain extends JFrame {
 
         m_docDir = p.getProperty("doc.dir");
         if (m_docDir == null || m_docDir.isEmpty()) {
-            throw new IllegalStateException(
-                    "Missing property 'doc.dir' in file " + settingsFileName);
+            throw new IllegalStateException("Missing property 'doc.dir' in file "
+                            + settingsFileName);
         }
         if (!m_docDir.endsWith(File.separator)) {
             m_docDir += File.separator;
@@ -124,65 +125,70 @@ public class SwingMain extends JFrame {
         searchPanel.setLayout(new GridBagLayout());
 
         searchPanel.add(search, new GridBagConstraints(0, 0, 1, 1, 1.0, 0.0,
-                GridBagConstraints.NORTH, GridBagConstraints.HORIZONTAL,
-                new Insets(2, 2, 2, 2), 2, 2));
+                        GridBagConstraints.NORTH, GridBagConstraints.HORIZONTAL, new Insets(2, 2,
+                                        2, 2), 2, 2));
         searchPanel.add(button, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0,
-                GridBagConstraints.NORTHEAST, GridBagConstraints.HORIZONTAL,
-                new Insets(2, 2, 2, 2), 2, 2));
+                        GridBagConstraints.NORTHEAST, GridBagConstraints.HORIZONTAL, new Insets(2,
+                                        2, 2, 2), 2, 2));
 
         // ----- table --------------------------------------------------
         JTable table = new JTable(m_resultsTableModel);
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getComponent().isEnabled()
-                        && e.getButton() == MouseEvent.BUTTON1
-                        && e.getClickCount() == 2) {
+                if (e.getComponent().isEnabled() && e.getButton() == MouseEvent.BUTTON1
+                                && e.getClickCount() == 2) {
                     JTable table = (JTable) e.getSource();
                     Point p = e.getPoint();
                     int row = table.rowAtPoint(p);
-                    int column = table.columnAtPoint(p);
+                    int column = 0; // table.columnAtPoint(p);
                     String s = (String) table.getModel().getValueAt(
-                            table.convertRowIndexToModel(row),
-                            table.convertColumnIndexToModel(column));
+                                    table.convertRowIndexToModel(row),
+                                    table.convertColumnIndexToModel(column));
                     LOG.debug("Opening document " + s);
                     try {
                         // TODO: open in new thread
                         Desktop.getDesktop().open(new File(s));
                     }
                     catch (Exception ex) {
-                        String msg = "Error opening " + s + ": "
-                                + ex.getMessage() == null ? ex.getClass()
-                                .getName() : ex.getMessage();
+                        String msg = "Error opening " + s + ": " + ex.getMessage() == null ? ex
+                                        .getClass().getName() : ex.getMessage();
                         LOG.error(msg, ex);
                         JOptionPane.showMessageDialog(table, msg, "Error",
-                                JOptionPane.ERROR_MESSAGE);
+                                        JOptionPane.ERROR_MESSAGE);
                     }
                 }
             }
         });
+        table.setFillsViewportHeight(true);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+
+        // ----- table scroll pane --------------------------------------
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 
         JPanel tablePanel = new JPanel();
         tablePanel.setBorder(new TitledBorder("Results"));
-        tablePanel.setLayout(new GridBagLayout());
-        tablePanel.add(table, new GridBagConstraints(0, 0, 1, 1, 1.0, 1.0,
-                GridBagConstraints.NORTH, GridBagConstraints.HORIZONTAL,
-                new Insets(2, 2, 2, 2), 1, 1));
+
+        tablePanel.setLayout(new BoxLayout(tablePanel, BoxLayout.PAGE_AXIS));
+        tablePanel.add(scrollPane);
 
         // ----- status bar ---------------------------------------------
         m_status = new JTextField("Total Results: 0");
         m_status.setEditable(false);
 
         // ----- set up main panel --------------------------------------
-        contentPane.add(searchPanel, new GridBagConstraints(0, 0, 1, 1, 1.0,
-                0.0, GridBagConstraints.NORTH, GridBagConstraints.HORIZONTAL,
-                new Insets(2, 2, 2, 2), 2, 2));
-        contentPane.add(tablePanel, new GridBagConstraints(0, 1, 1, 1, 0.0,
-                0.8, GridBagConstraints.NORTH, GridBagConstraints.BOTH,
-                new Insets(2, 2, 2, 2), 2, 2));
+        contentPane.add(searchPanel, new GridBagConstraints(0, 0, 1, 1, 1.0, 0.0,
+                        GridBagConstraints.NORTH, GridBagConstraints.HORIZONTAL, new Insets(2, 2,
+                                        2, 2), 2, 2));
+        contentPane.add(tablePanel, new GridBagConstraints(0, 1, 1, 1, 0.0, 0.8,
+                        GridBagConstraints.NORTH, GridBagConstraints.BOTH, new Insets(2, 2, 2, 2),
+                        2, 2));
         contentPane.add(m_status, new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0,
-                GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(
-                        2, 2, 2, 2), 2, 2));
+                        GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(2, 2, 2, 2),
+                        2, 2));
 
         // ----- finalize window ----------------------------------------
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -205,16 +211,16 @@ public class SwingMain extends JFrame {
         if (s.isEmpty()) {
             return;
         }
-        SwingWorker<List<String>, Object> worker = new SwingWorker<List<String>, Object>() {
+        SwingWorker<List<Map<String, String>>, Object> worker = new SwingWorker<List<Map<String, String>>, Object>() {
             @Override
-            protected List<String> doInBackground() throws Exception {
+            protected List<Map<String, String>> doInBackground() throws Exception {
                 return m_searcher.doSearch(s);
             }
 
             @Override
             protected void done() {
                 try {
-                    List<String> results = get();
+                    List<Map<String, String>> results = get();
                     m_resultsTableModel.setFiles(results);
                     m_resultsTableModel.fireTableDataChanged();
                     m_status.setText("Total Results: " + results.size());
@@ -231,14 +237,25 @@ public class SwingMain extends JFrame {
      * Table model that represents search results
      */
     public static class ResultsTableModel extends AbstractTableModel {
-        private List<String> m_files = new ArrayList<String>();
+        private List<Map<String, String>> m_files = new ArrayList<Map<String, String>>();
 
-        public List<String> getFiles() {
+        public List<Map<String, String>> getFiles() {
             return m_files;
         }
 
-        public void setFiles(List<String> files) {
+        public void setFiles(List<Map<String, String>> files) {
             this.m_files = files;
+        }
+
+        @Override
+        public String getColumnName(int columnIndex) {
+            switch (columnIndex) {
+            case 0:
+                return "File Name";
+            case 1:
+                return "Description";
+            }
+            return null;
         }
 
         @Override
@@ -248,17 +265,25 @@ public class SwingMain extends JFrame {
 
         @Override
         public int getColumnCount() {
-            return 1;
+            return 2;
         }
 
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
-            return m_files.get(rowIndex);
+            Map<String, String> m = m_files.get(rowIndex);
+            switch (columnIndex) {
+            case 0:
+                return m.get("file");
+            case 1:
+                return m.get("title");
+            }
+            return null;
         }
     }
 
     public static void main(String[] args) throws Exception {
         try {
+            LOG.info("Logging to " + System.getProperty("java.io.tmpdir"));
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 
             SwingMain window = new SwingMain();
@@ -268,8 +293,7 @@ public class SwingMain extends JFrame {
         catch (Exception e) {
             LOG.error("Unhandled exception", e);
             String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-            JOptionPane.showMessageDialog(null, msg, "Error",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, msg, "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
