@@ -17,20 +17,19 @@ import org.junit.Test;
  * 
  */
 public class WordDocPoiTest {
-	@Test
-	public void readFirstLine() throws FileNotFoundException, IOException {
-		POIFSFileSystem fs = new POIFSFileSystem(
-				new FileInputStream(
-						"H:\\opt\\src\\recipe-index\\data\\Arroz con Gandules Recipe.doc"));
-		assertNotNull(fs);
+    @Test
+    public void readFirstLine() throws FileNotFoundException, IOException {
+        POIFSFileSystem fs = new POIFSFileSystem(new FileInputStream(
+                "data/Arroz con Gandules Recipe.doc"));
+        assertNotNull(fs);
 
-		WordExtractor extractor = new WordExtractor(fs);
-		assertNotNull(extractor);
+        WordExtractor extractor = new WordExtractor(fs);
+        assertNotNull(extractor);
 
-		String[] paragraphs = extractor.getParagraphText();
-		assertNotNull(paragraphs);
+        String[] paragraphs = extractor.getParagraphText();
+        assertNotNull(paragraphs);
 
-		String title = paragraphs[0].trim();
-		assertEquals("Document title match", "Arroz con Gandules Recipe", title);
-	}
+        String title = paragraphs[0].trim();
+        assertEquals("Document title match", "Arroz con Gandules Recipe", title);
+    }
 }

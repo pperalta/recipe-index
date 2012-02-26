@@ -37,7 +37,8 @@ public class Searcher {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Search found " + hits.length() + " hits");
             }
-            List<Map<String, String>> results = new ArrayList<Map<String, String>>(hits.length());
+            List<Map<String, String>> results = new ArrayList<Map<String, String>>(
+                    hits.length());
             for (int i = 0; i < hits.length(); i++) {
                 Map<String, String> map = new HashMap<String, String>();
                 map.put("file", hits.doc(i).get("file"));

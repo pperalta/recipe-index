@@ -48,7 +48,8 @@ public class SwingMain extends JFrame {
      * Ensure that the index has been created and ready for searching
      */
     protected void initializeSearch() {
-        String settings = System.getProperty("user.home") + File.separator + ".recipe-index";
+        String settings = System.getProperty("user.home") + File.separator
+                + ".recipe-index";
         if (LOG.isDebugEnabled()) {
             LOG.debug("Settings directory: " + settings);
         }
@@ -57,7 +58,8 @@ public class SwingMain extends JFrame {
         File settingsDir = new File(settings);
         if (settingsDir.exists()) {
             if (!settingsDir.isDirectory()) {
-                throw new IllegalStateException("File " + settings + " must be a directory");
+                throw new IllegalStateException("File " + settings
+                        + " must be a directory");
             }
         }
         else {
@@ -66,7 +68,8 @@ public class SwingMain extends JFrame {
 
         // Load properties file
         Properties p = new Properties();
-        String settingsFileName = settings + File.separator + "recipe-index.properties";
+        String settingsFileName = settings + File.separator
+                + "recipe-index.properties";
         File settingsProperties = new File(settingsFileName);
 
         try {
@@ -81,8 +84,8 @@ public class SwingMain extends JFrame {
 
         m_docDir = p.getProperty("doc.dir");
         if (m_docDir == null || m_docDir.isEmpty()) {
-            throw new IllegalStateException("Missing property 'doc.dir' in file "
-                            + settingsFileName);
+            throw new IllegalStateException(
+                    "Missing property 'doc.dir' in file " + settingsFileName);
         }
         if (!m_docDir.endsWith(File.separator)) {
             m_docDir += File.separator;
@@ -125,37 +128,39 @@ public class SwingMain extends JFrame {
         searchPanel.setLayout(new GridBagLayout());
 
         searchPanel.add(search, new GridBagConstraints(0, 0, 1, 1, 1.0, 0.0,
-                        GridBagConstraints.NORTH, GridBagConstraints.HORIZONTAL, new Insets(2, 2,
-                                        2, 2), 2, 2));
+                GridBagConstraints.NORTH, GridBagConstraints.HORIZONTAL,
+                new Insets(2, 2, 2, 2), 2, 2));
         searchPanel.add(button, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0,
-                        GridBagConstraints.NORTHEAST, GridBagConstraints.HORIZONTAL, new Insets(2,
-                                        2, 2, 2), 2, 2));
+                GridBagConstraints.NORTHEAST, GridBagConstraints.HORIZONTAL,
+                new Insets(2, 2, 2, 2), 2, 2));
 
         // ----- table --------------------------------------------------
         JTable table = new JTable(m_resultsTableModel);
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getComponent().isEnabled() && e.getButton() == MouseEvent.BUTTON1
-                                && e.getClickCount() == 2) {
+                if (e.getComponent().isEnabled()
+                        && e.getButton() == MouseEvent.BUTTON1
+                        && e.getClickCount() == 2) {
                     JTable table = (JTable) e.getSource();
                     Point p = e.getPoint();
                     int row = table.rowAtPoint(p);
                     int column = 0; // table.columnAtPoint(p);
                     String s = (String) table.getModel().getValueAt(
-                                    table.convertRowIndexToModel(row),
-                                    table.convertColumnIndexToModel(column));
+                            table.convertRowIndexToModel(row),
+                            table.convertColumnIndexToModel(column));
                     LOG.debug("Opening document " + s);
                     try {
                         // TODO: open in new thread
                         Desktop.getDesktop().open(new File(s));
                     }
                     catch (Exception ex) {
-                        String msg = "Error opening " + s + ": " + ex.getMessage() == null ? ex
-                                        .getClass().getName() : ex.getMessage();
+                        String msg = "Error opening " + s + ": "
+                                + ex.getMessage() == null ? ex.getClass()
+                                .getName() : ex.getMessage();
                         LOG.error(msg, ex);
                         JOptionPane.showMessageDialog(table, msg, "Error",
-                                        JOptionPane.ERROR_MESSAGE);
+                                JOptionPane.ERROR_MESSAGE);
                     }
                 }
             }
@@ -166,8 +171,10 @@ public class SwingMain extends JFrame {
         // ----- table scroll pane --------------------------------------
 
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane
+                .setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane
+                .setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 
         JPanel tablePanel = new JPanel();
         tablePanel.setBorder(new TitledBorder("Results"));
@@ -180,15 +187,15 @@ public class SwingMain extends JFrame {
         m_status.setEditable(false);
 
         // ----- set up main panel --------------------------------------
-        contentPane.add(searchPanel, new GridBagConstraints(0, 0, 1, 1, 1.0, 0.0,
-                        GridBagConstraints.NORTH, GridBagConstraints.HORIZONTAL, new Insets(2, 2,
-                                        2, 2), 2, 2));
-        contentPane.add(tablePanel, new GridBagConstraints(0, 1, 1, 1, 0.0, 0.8,
-                        GridBagConstraints.NORTH, GridBagConstraints.BOTH, new Insets(2, 2, 2, 2),
-                        2, 2));
+        contentPane.add(searchPanel, new GridBagConstraints(0, 0, 1, 1, 1.0,
+                0.0, GridBagConstraints.NORTH, GridBagConstraints.HORIZONTAL,
+                new Insets(2, 2, 2, 2), 2, 2));
+        contentPane.add(tablePanel, new GridBagConstraints(0, 1, 1, 1, 0.0,
+                0.8, GridBagConstraints.NORTH, GridBagConstraints.BOTH,
+                new Insets(2, 2, 2, 2), 2, 2));
         contentPane.add(m_status, new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0,
-                        GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(2, 2, 2, 2),
-                        2, 2));
+                GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(
+                        2, 2, 2, 2), 2, 2));
 
         // ----- finalize window ----------------------------------------
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -213,7 +220,8 @@ public class SwingMain extends JFrame {
         }
         SwingWorker<List<Map<String, String>>, Object> worker = new SwingWorker<List<Map<String, String>>, Object>() {
             @Override
-            protected List<Map<String, String>> doInBackground() throws Exception {
+            protected List<Map<String, String>> doInBackground()
+                    throws Exception {
                 return m_searcher.doSearch(s);
             }
 
@@ -293,7 +301,8 @@ public class SwingMain extends JFrame {
         catch (Exception e) {
             LOG.error("Unhandled exception", e);
             String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-            JOptionPane.showMessageDialog(null, msg, "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, msg, "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 }
