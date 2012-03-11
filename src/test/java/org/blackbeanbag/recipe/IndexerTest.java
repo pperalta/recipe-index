@@ -12,10 +12,6 @@ public class IndexerTest {
     public static final String INDEX_DIR = "index";
 
     @Test
-    public void foo() {
-
-    }
-
     public void testScanWordDocument() {
         String file = "data/Arroz con Gandules Recipe.doc";
         Indexer indexer = new Indexer(DOC_DIR, INDEX_DIR);
@@ -24,10 +20,10 @@ public class IndexerTest {
         assertEquals(file, d.getValues("file")[0]);
     }
 
+    @Test
     public void testScanDirectory() {
         Indexer indexer = new Indexer(DOC_DIR, INDEX_DIR);
         List<String> files = indexer.scanDirectory();
         assertNotNull(files);
     }
-
 }
