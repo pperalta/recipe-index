@@ -1,4 +1,4 @@
-package org.blackbeanbag.recipie.poi;
+package org.blackbeanbag.recipe.poi;
 
 import static org.junit.Assert.*;
 

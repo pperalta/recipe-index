@@ -33,17 +33,19 @@ public class SwingMain extends JFrame {
     private static final Logger     LOG                 = Logger.getLogger(SwingMain.class);
     private final ResultsTableModel m_resultsTableModel = new ResultsTableModel();
     private JTextField              m_status;
-    private Indexer                 m_indexer;
     private Searcher                m_searcher;
-    private String                  m_docDir;
-    private String                  m_indexDir;
 
     /**
-     * Ensure that the index has been created and ready for searching
+     * Initialize the search index. The initialization process ensures that:
+     * <ul>
+     *     <li>the {@code ~/.recipe-index} directory has been created</li>
+     *     <li>the {@code ~/.recipe-index/recipe-index.properties} file exists</li>
+     *     <li>the property {@code doc.dir} exists and points to a valid directory</li>
+     *     <li>the index is created with the contents of the doc directory</li>
+     * </ul>
      */
     protected void initializeSearch() {
-        String settings = System.getProperty("user.home") + File.separator
-                + ".recipe-index";
+        String settings = System.getProperty("user.home") + File.separator + ".recipe-index";
         if (LOG.isDebugEnabled()) {
             LOG.debug("Settings directory: " + settings);
         }
@@ -52,8 +54,7 @@ public class SwingMain extends JFrame {
         File settingsDir = new File(settings);
         if (settingsDir.exists()) {
             if (!settingsDir.isDirectory()) {
-                throw new IllegalStateException("File " + settings
-                        + " must be a directory");
+                throw new IllegalStateException("File " + settings + " must be a directory");
             }
         }
         else {
@@ -62,8 +63,7 @@ public class SwingMain extends JFrame {
 
         // Load properties file
         Properties p = new Properties();
-        String settingsFileName = settings + File.separator
-                + "recipe-index.properties";
+        String settingsFileName = settings + File.separator + "recipe-index.properties";
         File settingsProperties = new File(settingsFileName);
 
         try {
@@ -76,28 +76,25 @@ public class SwingMain extends JFrame {
             throw new RuntimeException(e);
         }
 
-        m_docDir = p.getProperty("doc.dir");
-        if (m_docDir == null || m_docDir.isEmpty()) {
+        String docDir = p.getProperty("doc.dir");
+        if (docDir == null || docDir.isEmpty()) {
             throw new IllegalStateException(
                     "Missing property 'doc.dir' in file " + settingsFileName);
         }
-        if (!m_docDir.endsWith(File.separator)) {
-            m_docDir += File.separator;
+        if (!docDir.endsWith(File.separator)) {
+            docDir += File.separator;
         }
 
-        m_indexDir = settings + File.separator + "index";
+        String indexDir = settings + File.separator + "index";
 
-        m_indexer = new Indexer(m_docDir, m_indexDir);
+        // TODO: this should not be done upon every startup if the index already exists
+        new Indexer(docDir, indexDir).createIndex();
 
-        // TODO: this should not be done upon every startup if the index already
-        // exists
-        m_indexer.createIndex();
-
-        m_searcher = new Searcher(m_indexDir);
+        m_searcher = new Searcher(indexDir);
     }
 
     /**
-     * Create UI components and lay them out in the frame
+     * Create UI components and lay them out in the frame.
      */
     protected void buildUI() {
         JComponent contentPane = (JComponent) getContentPane();
@@ -148,13 +145,20 @@ public class SwingMain extends JFrame {
                     Point p = e.getPoint();
                     int row = table.rowAtPoint(p);
                     int column = 0; // table.columnAtPoint(p);
-                    String s = (String) table.getModel().getValueAt(
+                    final String s = (String) table.getModel().getValueAt(
                             table.convertRowIndexToModel(row),
                             table.convertColumnIndexToModel(column));
+
                     LOG.debug("Opening document " + s);
+
                     try {
-                        // TODO: open in new thread
-                        Desktop.getDesktop().open(new File(s));
+                        new SwingWorker<Void, Void>() {
+                            @Override
+                            protected Void doInBackground() throws Exception {
+                                Desktop.getDesktop().open(new File(s));
+                                return null;
+                            }
+                        }.execute();
                     }
                     catch (Exception ex) {
                         String msg = "Error opening " + s + ": "

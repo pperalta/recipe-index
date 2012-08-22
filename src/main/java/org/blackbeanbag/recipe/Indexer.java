@@ -1,14 +1,11 @@
 package org.blackbeanbag.recipe;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
 
 import org.apache.log4j.Logger;
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -20,16 +17,15 @@ public class Indexer {
     private static final Logger LOG = Logger.getLogger(Indexer.class);
     private String              m_docDir;
     private String              m_indexDir;
-    private Analyzer            m_analyzer;
     private IndexWriter         m_writer;
 
     public Indexer(String docDir, String indexDir) {
         super();
         this.m_docDir = docDir;
         this.m_indexDir = indexDir;
-        this.m_analyzer = new StandardAnalyzer();
+
         try {
-            this.m_writer = new IndexWriter(indexDir, m_analyzer, true);
+            this.m_writer = new IndexWriter(indexDir, new StandardAnalyzer(), true);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -71,8 +67,7 @@ public class Indexer {
     }
 
     /**
-     * @param fileDir
-     *            directory to search
+     * @param fileDir directory to search
      * 
      * @return list of word docs in this directory
      */
@@ -107,8 +102,7 @@ public class Indexer {
     }
 
     /**
-     * @param file
-     *            location of Word document
+     * @param file location of Word document
      * 
      * @return Lucene document suitable for indexing
      */
@@ -129,10 +123,9 @@ public class Indexer {
                 String paragraph = paragraphs[i];
 
                 // Someday this tokenizer will be smarter and distinguish
-                // between
-                // ingredients and amounts. The index (or the search) should be
-                // able to perform quantity conversions and recognize common
-                // quantity abbreviations. This may be done with a custom
+                // between ingredients and amounts. The index (or the search)
+                // should be able to perform quantity conversions and recognize
+                // common quantity abbreviations. This may be done with a custom
                 // Lucene tokenizer.
                 //
                 // For now we'll naively index each string that we come across
@@ -155,8 +148,56 @@ public class Indexer {
     }
 
     /**
-     * @param doc
-     *            Lucene document to index
+     * todo
+     *
+     * @param file
+     * @return
+     */
+    Document scanPlainTextDocument(String file) {
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(file));
+            String title = reader.readLine();
+
+            Document doc = new Document();
+            doc.add(Field.Keyword("file", file));
+            doc.add(Field.Keyword("title", title));
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                StringTokenizer t = new StringTokenizer(line);
+                while (t.hasMoreTokens()) {
+                    doc.add(Field.Text("ingredient", t.nextToken().trim()));
+                }
+            }
+
+            reader.close();
+            reader = null;
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Scanned file " + file);
+                LOG.debug("created document " + doc);
+            }
+            return doc;
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                }
+                catch (IOException e) {
+                    LOG.warn("Error closing file", e);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param doc Lucene document to index
      */
     void indexDocument(Document doc) {
         if (doc == null) {

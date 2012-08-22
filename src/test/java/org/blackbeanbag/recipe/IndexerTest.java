@@ -21,6 +21,15 @@ public class IndexerTest {
     }
 
     @Test
+    public void testScanPlainText() {
+        String file = "data/Arroz con Gandules Recipe.doc";
+        Indexer indexer = new Indexer(DOC_DIR, INDEX_DIR);
+        Document d = indexer.scanPlainTextDocument(file);
+        assertNotNull(d);
+        assertEquals(file, d.getValues("file")[0]);
+    }
+
+    @Test
     public void testScanDirectory() {
         Indexer indexer = new Indexer(DOC_DIR, INDEX_DIR);
         List<String> files = indexer.scanDirectory();
