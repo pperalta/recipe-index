@@ -1,2 +1,5 @@
 target
 index
+*.swp
+*.iml
+*.ipr
