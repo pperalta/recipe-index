@@ -6,16 +6,10 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -120,6 +114,14 @@ public class SwingMain extends JFrame {
         };
         search.addActionListener(listener);
 
+        KeyListener keyListener = new KeyAdapter() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+                onSearch(search.getText() + e.getKeyChar());
+            }
+        };
+        search.addKeyListener(keyListener);
+
         JButton button = new JButton("Search");
         button.addActionListener(listener);
 
@@ -156,8 +158,8 @@ public class SwingMain extends JFrame {
                     }
                     catch (Exception ex) {
                         String msg = "Error opening " + s + ": "
-                                + ex.getMessage() == null ? ex.getClass()
-                                .getName() : ex.getMessage();
+                                + (ex.getMessage() == null ? ex.getClass()
+                                .getName() : ex.getMessage());
                         LOG.error(msg, ex);
                         JOptionPane.showMessageDialog(table, msg, "Error",
                                 JOptionPane.ERROR_MESSAGE);
@@ -171,10 +173,8 @@ public class SwingMain extends JFrame {
         // ----- table scroll pane --------------------------------------
 
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane
-                .setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane
-                .setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 
         JPanel tablePanel = new JPanel();
         tablePanel.setBorder(new TitledBorder("Results"));
@@ -211,18 +211,23 @@ public class SwingMain extends JFrame {
      * be invoked via the AWT thread, thus the actual search will be performed
      * in another thread (using {@link SwingWorker}).
      * 
-     * @param s
-     *            search criteria
+     * @param s search criteria
      */
     private void onSearch(final String s) {
-        if (s.isEmpty()) {
-            return;
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Search term: " + s);
         }
+
         SwingWorker<List<Map<String, String>>, Object> worker = new SwingWorker<List<Map<String, String>>, Object>() {
             @Override
             protected List<Map<String, String>> doInBackground()
                     throws Exception {
-                return m_searcher.doSearch(s);
+                if (s == null || s.length() < 2) {
+                    return Collections.emptyList();
+                }
+                else {
+                    return m_searcher.doSearch(s);
+                }
             }
 
             @Override

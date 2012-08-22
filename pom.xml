@@ -42,7 +42,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>osxappbundle-maven-plugin</artifactId>
-                <version>1.0-alpha-1</version>
+                <version>1.0-alpha-2</version>
                 <configuration>
                     <mainClass>org.blackbeanbag.recipe.SwingMain</mainClass>
                     <iconFile>${basedir}/src/main/resources/eddie.icns</iconFile>
