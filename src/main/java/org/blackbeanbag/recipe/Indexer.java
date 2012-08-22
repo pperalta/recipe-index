@@ -1,28 +1,53 @@
 package org.blackbeanbag.recipe;
 
-import java.io.*;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.StringTokenizer;
 
 import org.apache.log4j.Logger;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.poi.hwpf.extractor.WordExtractor;
-import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.index.IndexWriter;
+
+import org.blackbeanbag.recipe.scanners.Scanner;
+import org.blackbeanbag.recipe.scanners.TextScanner;
+import org.blackbeanbag.recipe.scanners.WordScanner;
+
+import java.io.File;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * The Indexer class creates a Lucene index for supported documents.
+ */
 public class Indexer {
     private static final Logger LOG = Logger.getLogger(Indexer.class);
     private String              m_docDir;
     private String              m_indexDir;
     private IndexWriter         m_writer;
+    private Collection<Scanner> m_scanners;
 
+    /**
+     * Construct an Indexer.
+     *
+     * @param docDir    directory containing documents to index
+     * @param indexDir  directory containing the index
+     */
     public Indexer(String docDir, String indexDir) {
-        super();
+        this(docDir, indexDir, Arrays.asList(new WordScanner(), new TextScanner()));
+    }
+
+    /**
+     * Construct an Indexer.
+     *
+     * @param docDir    directory containing documents to index
+     * @param indexDir  directory containing the index
+     * @param scanners  a collection of {@link Scanner} objects
+     */
+    public Indexer(String docDir, String indexDir, Collection<Scanner> scanners) {
         this.m_docDir = docDir;
         this.m_indexDir = indexDir;
+        this.m_scanners = scanners;
 
         try {
             this.m_writer = new IndexWriter(indexDir, new StandardAnalyzer(), true);
@@ -32,26 +57,53 @@ public class Indexer {
         }
     }
 
+    /**
+     * Return the directory containing documents to index.
+     *
+     * @return directory containing documents to index
+     */
     public String getDocDir() {
         return m_docDir;
     }
 
+    /**
+     * Return the directory containing the index file.
+     *
+     * @return the directory containing the index
+     */
     public String getIndexDir() {
         return m_indexDir;
     }
 
+    /**
+     * Return the Lucene index writer.
+     *
+     * @return the index writer
+     */
+    public IndexWriter getWriter() {
+        return m_writer;
+    }
+
+    /**
+     * Return the collection of scanners used by this indexer.
+     *
+     * @return scanners used by this indexer
+     */
+    public Collection<Scanner> getScanners() {
+        return m_scanners;
+    }
+
+    /**
+     * Create the index.
+     */
     public void createIndex() {
-        LOG.debug("creating index");
-        List<String> docs = scanDirectory();
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("found docs: " + docs);
-        }
-        for (String doc : docs) {
-            indexDocument(scanWordDocument(doc));
-        }
+        LOG.debug("Creating index");
+
+        scanDirectory();
+
         try {
-            m_writer.optimize();
-            m_writer.close();
+            getWriter().optimize();
+            getWriter().close();
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -59,27 +111,25 @@ public class Indexer {
     }
 
     /**
-     * 
-     * @return list of Word document files
+     * Scan the configured document directory for supported
+     * documents.
      */
-    List<String> scanDirectory() {
-        return scanDirectory(new File(m_docDir));
+    protected void scanDirectory() {
+        scanDirectory(new File(getDocDir()));
     }
 
     /**
+     * Scan the given directory file for supported documents.
+     *
      * @param fileDir directory to search
-     * 
-     * @return list of word docs in this directory
      */
-    private List<String> scanDirectory(File fileDir) {
-        List<String> fileList = new LinkedList<String>();
+    private void scanDirectory(File fileDir) {
         List<File> dirList = new LinkedList<File>();
 
         if (!fileDir.isDirectory()) {
             throw new IllegalArgumentException(fileDir + " must be a directory");
         }
 
-        LOG.info("Scanning directory " + fileDir);
         if (LOG.isDebugEnabled()) {
             LOG.debug("Scanning directory " + fileDir);
         }
@@ -89,128 +139,27 @@ public class Indexer {
             if (files[i].isDirectory()) {
                 dirList.add(files[i]);
             }
-            else if (files[i].getName().endsWith("doc")) {
-                fileList.add(files[i].getAbsolutePath());
+            else {
+                String file = files[i].getAbsolutePath();
+
+                for (Scanner scanner : getScanners()) {
+                    if (scanner.supportsFile(file)) {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Scanning file " + file);
+                        }
+                        try {
+                            getWriter().addDocument(scanner.scan(file));
+                        }
+                        catch (Exception e) {
+                            LOG.warn("Could not process file " + file, e);
+                        }
+                    }
+                }
             }
         }
 
         for (File dir : dirList) {
-            fileList.addAll(scanDirectory(dir));
-        }
-
-        return fileList;
-    }
-
-    /**
-     * @param file location of Word document
-     * 
-     * @return Lucene document suitable for indexing
-     */
-    Document scanWordDocument(String file) {
-        try {
-            POIFSFileSystem fs = new POIFSFileSystem(new FileInputStream(file));
-            WordExtractor extractor = new WordExtractor(fs);
-            String[] paragraphs = extractor.getParagraphText();
-
-            // assuming the first line is the recipe title
-            String title = paragraphs[0].trim();
-
-            Document doc = new Document();
-            doc.add(Field.Keyword("file", file));
-            doc.add(Field.Keyword("title", title));
-
-            for (int i = 0; i < paragraphs.length; i++) {
-                String paragraph = paragraphs[i];
-
-                // Someday this tokenizer will be smarter and distinguish
-                // between ingredients and amounts. The index (or the search)
-                // should be able to perform quantity conversions and recognize
-                // common quantity abbreviations. This may be done with a custom
-                // Lucene tokenizer.
-                //
-                // For now we'll naively index each string that we come across
-
-                StringTokenizer t = new StringTokenizer(paragraph);
-                while (t.hasMoreTokens()) {
-                    doc.add(Field.Text("ingredient", t.nextToken().trim()));
-                }
-            }
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Scanned file " + file);
-                LOG.debug("created document " + doc);
-            }
-            return doc;
-        }
-        catch (Exception e) {
-            LOG.error("Error parsing file " + file, e);
-            return null;
-        }
-    }
-
-    /**
-     * todo
-     *
-     * @param file
-     * @return
-     */
-    Document scanPlainTextDocument(String file) {
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new FileReader(file));
-            String title = reader.readLine();
-
-            Document doc = new Document();
-            doc.add(Field.Keyword("file", file));
-            doc.add(Field.Keyword("title", title));
-
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-                StringTokenizer t = new StringTokenizer(line);
-                while (t.hasMoreTokens()) {
-                    doc.add(Field.Text("ingredient", t.nextToken().trim()));
-                }
-            }
-
-            reader.close();
-            reader = null;
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Scanned file " + file);
-                LOG.debug("created document " + doc);
-            }
-            return doc;
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                }
-                catch (IOException e) {
-                    LOG.warn("Error closing file", e);
-                }
-            }
-        }
-    }
-
-    /**
-     * @param doc Lucene document to index
-     */
-    void indexDocument(Document doc) {
-        if (doc == null) {
-            return;
-        }
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Indexing document:  " + doc);
-        }
-        try {
-            m_writer.addDocument(doc);
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
+            scanDirectory(dir);
         }
     }
 }

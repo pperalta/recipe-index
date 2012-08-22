@@ -1,10 +1,10 @@
 package org.blackbeanbag.recipe;
 
 import static org.junit.Assert.*;
-
-import java.util.List;
+import static org.junit.Assert.assertEquals;
 
 import org.apache.lucene.document.Document;
+import org.blackbeanbag.recipe.scanners.Scanner;
 import org.junit.Test;
 
 public class IndexerTest {
@@ -13,26 +13,23 @@ public class IndexerTest {
 
     @Test
     public void testScanWordDocument() {
-        String file = "data/Arroz con Gandules Recipe.doc";
-        Indexer indexer = new Indexer(DOC_DIR, INDEX_DIR);
-        Document d = indexer.scanWordDocument(file);
-        assertNotNull(d);
-        assertEquals(file, d.getValues("file")[0]);
+        testScan("data/Arroz con Gandules Recipe.doc");
     }
 
     @Test
     public void testScanPlainText() {
-        String file = "data/Arroz con Gandules Recipe.doc";
-        Indexer indexer = new Indexer(DOC_DIR, INDEX_DIR);
-        Document d = indexer.scanPlainTextDocument(file);
-        assertNotNull(d);
-        assertEquals(file, d.getValues("file")[0]);
+        testScan("data/Arroz con Gandules Recipe.txt");
     }
 
-    @Test
-    public void testScanDirectory() {
+    private void testScan(String file) {
         Indexer indexer = new Indexer(DOC_DIR, INDEX_DIR);
-        List<String> files = indexer.scanDirectory();
-        assertNotNull(files);
+
+        for (Scanner scanner : indexer.getScanners()) {
+            if (scanner.supportsFile(file)) {
+                Document doc = scanner.scan(file);
+                assertNotNull(doc);
+                assertEquals(file, doc.getValues("file")[0]);
+            }
+        }
     }
 }
