@@ -3,3 +3,5 @@ index
 *.swp
 *.iml
 *.ipr
+.classpath
+.project
