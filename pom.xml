@@ -42,7 +42,15 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>osxappbundle-maven-plugin</artifactId>
-                <version>1.0-alpha-2</version>
+                <!--
+                Version 1.0 alpha 4 is required to work on versions
+                of X Code installed from the app store (as opposed to
+                the OS X DVD). As of August 2012, this version is not
+                in the Maven repository, so this version was pulled from
+                the Codehaus SVN and built locally (thus the SNAPSHOT
+                version).
+                -->
+                <version>1.0-alpha-4-SNAPSHOT</version>
                 <configuration>
                     <mainClass>org.blackbeanbag.recipe.SwingMain</mainClass>
                     <iconFile>${basedir}/src/main/resources/eddie.icns</iconFile>

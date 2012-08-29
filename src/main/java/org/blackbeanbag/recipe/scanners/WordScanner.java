@@ -61,7 +61,9 @@ public class WordScanner implements Scanner {
             }
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Scanned file " + file);
-                LOG.debug("created document " + doc);
+            }
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("Created document " + doc);
             }
             return doc;
         }
