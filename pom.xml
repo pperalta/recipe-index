@@ -52,6 +52,7 @@
                 -->
                 <version>1.0-alpha-4-SNAPSHOT</version>
                 <configuration>
+                    <bundleName>Recipe Finder</bundleName>
                     <mainClass>org.blackbeanbag.recipe.SwingMain</mainClass>
                     <iconFile>${basedir}/src/main/resources/eddie.icns</iconFile>
                 </configuration>
