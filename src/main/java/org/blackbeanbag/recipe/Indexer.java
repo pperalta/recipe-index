@@ -19,16 +19,37 @@ import java.util.List;
 
 /**
  * The Indexer class creates a Lucene index for supported documents.
+ * New document types are supported via the {@link Scanner} interface
+ * and can be provided via the Indexer constructor.
  */
 public class Indexer {
+    /**
+     * Logger for this class.
+     */
     private static final Logger LOG = Logger.getLogger(Indexer.class);
-    private String              m_docDir;
-    private String              m_indexDir;
-    private IndexWriter         m_writer;
+
+    /**
+     * Directory containing documents to index.
+     */
+    private String m_docDir;
+
+    /**
+     * Directory containing the index.
+     */
+    private String m_indexDir;
+
+    /**
+     * The Lucene index writer.
+     */
+    private IndexWriter m_writer;
+
+    /**
+     * A collection of supported document scanners.
+     */
     private Collection<Scanner> m_scanners;
 
     /**
-     * Construct an Indexer.
+     * Construct an Indexer that supports Word and text files.
      *
      * @param docDir    directory containing documents to index
      * @param indexDir  directory containing the index
@@ -38,7 +59,8 @@ public class Indexer {
     }
 
     /**
-     * Construct an Indexer.
+     * Construct an Indexer. This constructor requires a non null collection
+     * of {@link Scanner}s in order to support scanning of documents.
      *
      * @param docDir    directory containing documents to index
      * @param indexDir  directory containing the index
@@ -123,7 +145,7 @@ public class Indexer {
      *
      * @param fileDir directory to search
      */
-    private void scanDirectory(File fileDir) {
+    protected void scanDirectory(File fileDir) {
         List<File> dirList = new LinkedList<File>();
 
         if (!fileDir.isDirectory()) {

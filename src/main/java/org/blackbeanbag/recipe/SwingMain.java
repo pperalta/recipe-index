@@ -40,12 +40,31 @@ import javax.swing.table.AbstractTableModel;
 
 import org.apache.log4j.Logger;
 
+/**
+ * SwingMain is the main entry point for the application. Upon startup
+ * the Lucene index will be created before displaying the frame.
+ */
 @SuppressWarnings("serial")
 public class SwingMain extends JFrame {
-    private static final Logger     LOG                 = Logger.getLogger(SwingMain.class);
+    /**
+     * Logger for this class.
+     */
+    private static final Logger LOG = Logger.getLogger(SwingMain.class);
+
+    /**
+     * Table model for search results.
+     */
     private final ResultsTableModel m_resultsTableModel = new ResultsTableModel();
-    private JTextField              m_status;
-    private Searcher                m_searcher;
+
+    /**
+     * Text field for status bar at the bottom of the frame.
+     */
+    private JTextField m_status;
+
+    /**
+     * Searcher used to perform searches.
+     */
+    private Searcher m_searcher;
 
     /**
      * Initialize the search index. The initialization process ensures that:
@@ -73,7 +92,6 @@ public class SwingMain extends JFrame {
             settingsDir.mkdir();
         }
 
-        // Load properties file
         Properties p = new Properties();
         String settingsFileName = settings + File.separator + "recipe-index.properties";
         File settingsProperties = new File(settingsFileName);
@@ -310,7 +328,12 @@ public class SwingMain extends JFrame {
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    /**
+     * Main entry point for the application.
+     *
+     * @param args command line arguments
+     */
+    public static void main(String[] args) {
         try {
             LOG.info("Logging to " + System.getProperty("java.io.tmpdir"));
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

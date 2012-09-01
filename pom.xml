@@ -16,6 +16,21 @@
 
     <build>
         <plugins>
+            <!--
+            Intellij IDEA plugin - jdkName sets the correct JDK version
+            when generating the project file.
+            -->
+            <plugin>
+                <version>2.2</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-idea-plugin</artifactId>
+                <configuration>
+                    <jdkName>JDK 1.6</jdkName>
+                </configuration>
+            </plugin>
+            <!--
+            Plugin to create a single executable jar with dependencies.
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -39,6 +54,9 @@
                     </execution>
                 </executions>
             </plugin>
+            <!--
+            Plugin to generate an OS X .app executable.
+            -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>osxappbundle-maven-plugin</artifactId>
