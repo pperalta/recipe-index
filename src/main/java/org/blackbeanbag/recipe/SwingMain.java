@@ -1,11 +1,6 @@
 package org.blackbeanbag.recipe;
 
-import java.awt.Desktop;
-import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.Point;
+import java.awt.*;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -17,24 +12,15 @@ import java.awt.event.MouseEvent;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingWorker;
-import javax.swing.UIManager;
+import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 
@@ -76,12 +62,41 @@ public class SwingMain extends JFrame {
      * </ul>
      */
     protected void initializeSearch() {
+        String settingsDir = ensureSettingsDir();
+        String docDir = getDocumentDir(settingsDir);
+        String indexDir = settingsDir + File.separator + "index";
+
+        // prior to indexing the documents, display a dialog box indicating
+        // the creation of the index to avoid the appearance of an unresponsive application
+        JDialog dialog = new JDialog(this, false);
+        dialog.setLocationRelativeTo(null);
+        ((JPanel) dialog.getContentPane()).setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        dialog.getContentPane().add(new JLabel("Indexing recipes, please wait..."));
+        dialog.pack();
+        dialog.setVisible(true);
+
+        try {
+            new Indexer(docDir, indexDir).createIndex();
+        }
+        finally {
+            dialog.setVisible(false);
+            dialog.dispose();
+        }
+
+        m_searcher = new Searcher(indexDir);
+    }
+
+    /**
+     * Ensure that the settings directory {@code ($HOME/.recipe-index)} exists.
+     *
+     * @return the settings directory
+     */
+    protected String ensureSettingsDir() {
         String settings = System.getProperty("user.home") + File.separator + ".recipe-index";
         if (LOG.isDebugEnabled()) {
             LOG.debug("Settings directory: " + settings);
         }
 
-        // Ensure that $HOME/recipe-index directory exists
         File settingsDir = new File(settings);
         if (settingsDir.exists()) {
             if (!settingsDir.isDirectory()) {
@@ -89,11 +104,28 @@ public class SwingMain extends JFrame {
             }
         }
         else {
-            settingsDir.mkdir();
+            boolean created = settingsDir.mkdir();
+            assert created : String.format("Settings directory %s could not be created", settings);
         }
+        return settings;
+    }
 
+    /**
+     * Read the settings file (settingsDir + recipe-index.properties) and return
+     * the document directory containing documents to be indexed. If the settings
+     * file does not exist or does not contain the property, a user dialog will
+     * prompt the user to choose a directory and the chosen directory will be saved
+     * to the preferences file.
+     * <br />
+     * The property containing the document directory is {@code doc.dir}.
+     *
+     * @param settingsDir the settings directory (typically {@code $HOME/.recipe-index}).
+     *
+     * @return the directory containing documents to index
+     */
+    protected String getDocumentDir(String settingsDir) {
         Properties p = new Properties();
-        String settingsFileName = settings + File.separator + "recipe-index.properties";
+        String settingsFileName = settingsDir + File.separator + "recipe-index.properties";
         File settingsProperties = new File(settingsFileName);
 
         try {
@@ -108,19 +140,37 @@ public class SwingMain extends JFrame {
 
         String docDir = p.getProperty("doc.dir");
         if (docDir == null || docDir.isEmpty()) {
-            throw new IllegalStateException(
-                    "Missing property 'doc.dir' in file " + settingsFileName);
+            JOptionPane.showMessageDialog(this, "Recipe directory has not been selected. " +
+                    "You will now be prompted to select the recipe directory.",
+                    "Information", JOptionPane.INFORMATION_MESSAGE);
+
+            JFileChooser chooser = new JFileChooser();
+            chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+            if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                docDir = chooser.getSelectedFile().getAbsolutePath();
+                p.setProperty("doc.dir", docDir);
+                try {
+                    p.store(new FileWriter(settingsFileName), "Recipe Finder Settings");
+                }
+                catch (IOException e) {
+                    String msg = String.format("Could not save preference file '%s'", settingsFileName);
+                    LOG.warn(msg, e);
+                    JOptionPane.showMessageDialog(this, msg + "; see error log for details",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
         }
+        if (docDir == null || docDir.isEmpty()) {
+            throw new IllegalStateException(
+                    "Could not determine document directory; check for missing property 'doc.dir' in file " +
+                            settingsFileName);
+        }
+
         if (!docDir.endsWith(File.separator)) {
             docDir += File.separator;
         }
-
-        String indexDir = settings + File.separator + "index";
-
-        // TODO: this should not be done upon every startup if the index already exists
-        new Indexer(docDir, indexDir).createIndex();
-
-        m_searcher = new Searcher(indexDir);
+        return docDir;
     }
 
     /**
@@ -174,7 +224,7 @@ public class SwingMain extends JFrame {
                     JTable table = (JTable) e.getSource();
                     Point p = e.getPoint();
                     int row = table.rowAtPoint(p);
-                    int column = 0; // table.columnAtPoint(p);
+                    int column = ResultsTableModel.FILE_NAME;
                     final String s = (String) table.getModel().getValueAt(
                             table.convertRowIndexToModel(row),
                             table.convertColumnIndexToModel(column));
@@ -283,45 +333,84 @@ public class SwingMain extends JFrame {
     /**
      * Table model that represents search results
      */
-    public static class ResultsTableModel extends AbstractTableModel {
+    public class ResultsTableModel extends AbstractTableModel {
+        /**
+         * Table column for file description.
+         */
+        public static final int DESCRIPTION = 0;
+
+        /**
+         * Table column for file name.
+         */
+        public static final int FILE_NAME = 1;
+
+        /**
+         * Search results.
+         */
         private List<Map<String, String>> m_files = new ArrayList<Map<String, String>>();
 
+        /**
+         * Return the search results.
+         *
+         * @return search results
+         *
+         * @see Searcher#doSearch(String)
+         */
         public List<Map<String, String>> getFiles() {
             return m_files;
         }
 
+        /**
+         * Set the search results to display.
+         *
+         * @param files search results
+         *
+         * @see Searcher#doSearch(String)
+         */
         public void setFiles(List<Map<String, String>> files) {
             this.m_files = files;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public String getColumnName(int columnIndex) {
             switch (columnIndex) {
-            case 0:
+            case FILE_NAME:
                 return "File Name";
-            case 1:
+            case DESCRIPTION:
                 return "Description";
             }
             return null;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public int getRowCount() {
             return m_files.size();
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public int getColumnCount() {
             return 2;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
             Map<String, String> m = m_files.get(rowIndex);
             switch (columnIndex) {
-            case 0:
+            case FILE_NAME:
                 return m.get("file");
-            case 1:
+            case DESCRIPTION:
                 return m.get("title");
             }
             return null;
@@ -347,6 +436,7 @@ public class SwingMain extends JFrame {
             String msg = e.getMessage() == null ? e.toString() : e.getMessage();
             JOptionPane.showMessageDialog(null, msg, "Error",
                     JOptionPane.ERROR_MESSAGE);
+            System.exit(0);
         }
     }
 }

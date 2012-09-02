@@ -157,23 +157,22 @@ public class Indexer {
         }
 
         File[] files = fileDir.listFiles();
-        for (int i = 0; i < files.length; i++) {
-            if (files[i].isDirectory()) {
-                dirList.add(files[i]);
+        for (File file : files) {
+            if (file.isDirectory()) {
+                dirList.add(file);
             }
             else {
-                String file = files[i].getAbsolutePath();
+                String fileName = file.getAbsolutePath();
 
                 for (Scanner scanner : getScanners()) {
-                    if (scanner.supportsFile(file)) {
+                    if (scanner.supportsFile(fileName)) {
                         if (LOG.isDebugEnabled()) {
-                            LOG.debug("Scanning file " + file);
+                            LOG.debug("Scanning file " + fileName);
                         }
                         try {
-                            getWriter().addDocument(scanner.scan(file));
-                        }
-                        catch (Exception e) {
-                            LOG.warn("Could not process file " + file, e);
+                            getWriter().addDocument(scanner.scan(fileName));
+                        } catch (Exception e) {
+                            LOG.warn("Could not process file " + fileName, e);
                         }
                     }
                 }
