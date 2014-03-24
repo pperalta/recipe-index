@@ -3,6 +3,7 @@ package org.blackbeanbag.recipe.scanners;
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -35,15 +36,15 @@ public class TextScanner implements Scanner {
             String title = reader.readLine();
 
             Document doc = new Document();
-            doc.add(Field.Keyword("file", file));
-            doc.add(Field.Keyword("title", title));
+            doc.add(new Field("file", file, TextField.TYPE_STORED));
+            doc.add(new Field("title", title, TextField.TYPE_STORED));
 
             String line;
 
             while ((line = reader.readLine()) != null) {
                 StringTokenizer t = new StringTokenizer(line);
                 while (t.hasMoreTokens()) {
-                    doc.add(Field.Text("ingredient", t.nextToken().trim()));
+                    doc.add(new Field("ingredient", t.nextToken().trim(), TextField.TYPE_STORED));
                 }
             }
 

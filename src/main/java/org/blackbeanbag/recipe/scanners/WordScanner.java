@@ -3,9 +3,9 @@ package org.blackbeanbag.recipe.scanners;
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
-import org.blackbeanbag.recipe.Indexer;
 
 import java.io.FileInputStream;
 import java.util.*;
@@ -40,12 +40,11 @@ public class WordScanner implements Scanner {
             String title = paragraphs[0].trim();
 
             Document doc = new Document();
-            doc.add(Field.Keyword("file", file));
-            doc.add(Field.Keyword("title", title));
 
-            for (int i = 0; i < paragraphs.length; i++) {
-                String paragraph = paragraphs[i];
+            doc.add(new Field("file", file, TextField.TYPE_STORED));
+            doc.add(new Field("title", title, TextField.TYPE_STORED));
 
+            for (String paragraph : paragraphs) {
                 // Someday this tokenizer will be smarter and distinguish
                 // between ingredients and amounts. The index (or the search)
                 // should be able to perform quantity conversions and recognize
@@ -56,7 +55,7 @@ public class WordScanner implements Scanner {
 
                 StringTokenizer t = new StringTokenizer(paragraph);
                 while (t.hasMoreTokens()) {
-                    doc.add(Field.Text("ingredient", t.nextToken().trim()));
+                    doc.add(new Field("ingredient", t.nextToken().trim(), TextField.TYPE_STORED));
                 }
             }
             if (LOG.isDebugEnabled()) {

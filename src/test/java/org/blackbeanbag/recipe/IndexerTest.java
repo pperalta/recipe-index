@@ -24,12 +24,18 @@ public class IndexerTest {
     private void testScan(String file) {
         Indexer indexer = new Indexer(DOC_DIR, INDEX_DIR);
 
-        for (Scanner scanner : indexer.getScanners()) {
-            if (scanner.supportsFile(file)) {
-                Document doc = scanner.scan(file);
-                assertNotNull(doc);
-                assertEquals(file, doc.getValues("file")[0]);
+        try {
+            for (Scanner scanner : indexer.getScanners()) {
+                if (scanner.supportsFile(file)) {
+                    Document doc = scanner.scan(file);
+                    assertNotNull(doc);
+                    assertEquals(file, doc.getValues("file")[0]);
+                }
             }
         }
+        finally {
+            indexer.close();
+        }
+
     }
 }

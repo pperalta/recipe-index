@@ -3,8 +3,13 @@ package org.blackbeanbag.recipe;
 
 import org.apache.log4j.Logger;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
 
 import org.blackbeanbag.recipe.scanners.Scanner;
 import org.blackbeanbag.recipe.scanners.TextScanner;
@@ -12,6 +17,7 @@ import org.blackbeanbag.recipe.scanners.WordScanner;
 
 import java.io.File;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -72,7 +78,10 @@ public class Indexer {
         this.m_scanners = scanners;
 
         try {
-            this.m_writer = new IndexWriter(indexDir, new StandardAnalyzer(), true);
+            Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_47);
+            IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_47, analyzer);
+            Directory directory = FSDirectory.open(new File(indexDir));
+            this.m_writer = new IndexWriter(directory, config);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -124,10 +133,21 @@ public class Indexer {
         scanDirectory();
 
         try {
-            getWriter().optimize();
             getWriter().close();
         }
         catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Close the indexer.
+     */
+    public void close() {
+        try {
+            m_writer.close();
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -157,6 +177,9 @@ public class Indexer {
         }
 
         File[] files = fileDir.listFiles();
+        if (files == null) {
+            throw new IllegalArgumentException(fileDir + " does not contain any files");
+        }
         for (File file : files) {
             if (file.isDirectory()) {
                 dirList.add(file);

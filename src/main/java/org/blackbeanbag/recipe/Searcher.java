@@ -1,5 +1,6 @@
 package org.blackbeanbag.recipe;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,10 +9,14 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.Hits;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
 
 /**
  * Searcher is used for performing text queries against a
@@ -44,8 +49,9 @@ public class Searcher {
      */
     public Searcher(String indexDir) {
         try {
-            m_indexSearcher = new IndexSearcher(indexDir);
-            m_analyzer = new StandardAnalyzer();
+            DirectoryReader directoryReader = DirectoryReader.open(FSDirectory.open(new File(indexDir)));
+            m_indexSearcher = new IndexSearcher(directoryReader);
+            m_analyzer = new StandardAnalyzer(Version.LUCENE_47);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -64,17 +70,18 @@ public class Searcher {
      */
     public List<Map<String, String>> doSearch(String criteria) {
         try {
-            QueryParser parser = new QueryParser("ingredient", m_analyzer);
+            QueryParser parser = new QueryParser(Version.LUCENE_47, "ingredient", m_analyzer);
             Query query = parser.parse(criteria);
-            Hits hits = m_indexSearcher.search(query);
+            ScoreDoc[] hits = m_indexSearcher.search(query, null, 1000).scoreDocs;
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Search found " + hits.length() + " hits");
+                LOG.debug("Search found " + hits.length + " hits");
             }
-            List<Map<String, String>> results = new ArrayList<Map<String, String>>(hits.length());
-            for (int i = 0; i < hits.length(); i++) {
+            List<Map<String, String>> results = new ArrayList<Map<String, String>>(hits.length);
+            for (ScoreDoc hit : hits) {
+                Document doc = m_indexSearcher.doc(hit.doc);
                 Map<String, String> map = new HashMap<String, String>();
-                map.put("file", hits.doc(i).get("file"));
-                map.put("title", hits.doc(i).get("title"));
+                map.put("file", doc.get("file"));
+                map.put("title", doc.get("title"));
                 results.add(map);
             }
             return results;
