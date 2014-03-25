@@ -6,7 +6,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -36,7 +36,7 @@ public class LuceneTest {
     }
 
     public static void indexDocument(Document document) throws IOException {
-        Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_47);
+        Analyzer analyzer = new EnglishAnalyzer(Version.LUCENE_47);
         IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_47, analyzer);
         Directory directory = FSDirectory.open(new File("index"));
         IndexWriter writer = new IndexWriter(directory, config);
@@ -51,7 +51,7 @@ public class LuceneTest {
     }
 
     public static TopDocs doSearch(IndexSearcher searcher, String term) throws IOException, ParseException {
-        Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_47);
+        Analyzer analyzer = new EnglishAnalyzer(Version.LUCENE_47);
         QueryParser parser = new QueryParser(Version.LUCENE_47, "ingredient", analyzer);
 
         Query query = parser.parse(term);

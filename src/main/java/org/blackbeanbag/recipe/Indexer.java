@@ -4,7 +4,7 @@ package org.blackbeanbag.recipe;
 import org.apache.log4j.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
@@ -78,7 +78,7 @@ public class Indexer {
         this.m_scanners = scanners;
 
         try {
-            Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_47);
+            Analyzer analyzer = new EnglishAnalyzer(Version.LUCENE_47);
             IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_47, analyzer);
             Directory directory = FSDirectory.open(new File(indexDir));
             this.m_writer = new IndexWriter(directory, config);

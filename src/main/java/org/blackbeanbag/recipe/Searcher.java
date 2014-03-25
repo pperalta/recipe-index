@@ -8,7 +8,7 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -51,7 +51,7 @@ public class Searcher {
         try {
             DirectoryReader directoryReader = DirectoryReader.open(FSDirectory.open(new File(indexDir)));
             m_indexSearcher = new IndexSearcher(directoryReader);
-            m_analyzer = new StandardAnalyzer(Version.LUCENE_47);
+            m_analyzer = new EnglishAnalyzer(Version.LUCENE_47);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
