@@ -40,6 +40,7 @@ public class LuceneTest {
         IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_47, analyzer);
         Directory directory = FSDirectory.open(new File("index"));
         IndexWriter writer = new IndexWriter(directory, config);
+        writer.deleteAll();
 
         writer.addDocument(document);
         writer.close();
@@ -59,7 +60,7 @@ public class LuceneTest {
     }
 
     private static void assertDocumentHit(TopDocs docs, IndexSearcher searcher) throws IOException {
-//        assertEquals("One result expected", 1, docs.totalHits);
+        assertEquals("One result expected", 1, docs.totalHits);
         assertEquals("Expected document match", searcher.doc(0).getField("title")
                 .stringValue(), "Wild Turkey Surprise");
     }

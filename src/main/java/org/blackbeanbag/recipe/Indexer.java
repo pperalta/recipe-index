@@ -82,6 +82,7 @@ public class Indexer {
             IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_47, analyzer);
             Directory directory = FSDirectory.open(new File(indexDir));
             this.m_writer = new IndexWriter(directory, config);
+            this.m_writer.deleteAll();
         }
         catch (Exception e) {
             throw new RuntimeException(e);
