@@ -25,31 +25,42 @@
             <build>
                 <plugins>
                     <!--
-                    Plugin to generate an OS X .app executable.
+                    Ant target to generate a Mac OS X application
+                    that runs on Java 1.7.
+
+                    See the following for details:
+
+                    http://docs.oracle.com/javase/7/docs/technotes/guides/jweb/packagingAppsForMac.html
+                    https://java.net/projects/appbundler/pages/Home
+                    http://stackoverflow.com/questions/14806709/application-is-using-java-6-from-apple-instead-of-java-7-from-oracle-on-mac-os-x
                     -->
                     <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>osxappbundle-maven-plugin</artifactId>
-                        <!--
-                        Version 1.0 alpha 4 is required to work on versions
-                        of X Code installed from the app store (as opposed to
-                        the OS X DVD). As of August 2012, this version is not
-                        in the Maven repository, so this version was pulled from
-                        the Codehaus SVN and built locally (thus the SNAPSHOT
-                        version).
-                        -->
-                        <version>1.0-alpha-4-SNAPSHOT</version>
-                        <configuration>
-                            <bundleName>Recipe Finder</bundleName>
-                            <mainClass>org.blackbeanbag.recipe.SwingMain</mainClass>
-                            <iconFile>${basedir}/src/main/resources/eddie.icns</iconFile>
-                        </configuration>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
                         <executions>
                             <execution>
                                 <phase>package</phase>
                                 <goals>
-                                    <goal>bundle</goal>
+                                    <goal>run</goal>
                                 </goals>
+                                <configuration>
+                                    <target>
+                                        <taskdef name="bundleapp"
+                                          classname="com.oracle.appbundler.AppBundlerTask"
+                                          classpath="${basedir}/appbundler/lib/appbundler-1.0.jar"/>
+
+                                        <bundleapp outputdirectory="${project.build.directory}"
+                                          name="Recipe Finder"
+                                          displayname="Recipe Finder"
+                                          identifier="Recipe Finder"
+                                          shortversion="2014.03.24"
+                                          icon="${basedir}/src/main/resources/eddie.icns"
+                                          applicationCategory="public.app-category.developer-tools"
+                                          mainclassname="org.blackbeanbag.recipe.SwingMain">
+                                            <classpath file="${project.build.directory}/recipe-index-1.0-SNAPSHOT-jar-with-dependencies.jar"/>
+                                        </bundleapp>
+                                    </target>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
